@@ -44,9 +44,26 @@ export class ParallelChannel extends Channel {
         return this._runningTasks;
     }
 
-    set parallelism(count) {
-        const newCount = Math.max(count, 1);
-        this._parallelism = newCount;
+    set parallelism(count: number) {
+        // NaN or a string would stop the channel for good (Math.max(NaN, 1) is NaN)
+        if (typeof count !== "number" || !Number.isFinite(count) || count < 1) {
+            throw new Error(`Invalid parallelism: expected a number of at least 1, got ${count}`);
+        }
+        this._parallelism = Math.floor(count);
+    }
+
+    /**
+     * Start processing the queue. When it is already running, a task added
+     * since then starts at once if a slot is free, instead of waiting for a
+     * running task to end.
+     * @returns {Boolean} Returns true if started, false if already started
+     */
+    start(): boolean {
+        if (this.isRunning) {
+            setTimeout(() => this._runNextItem(), 0);
+            return false;
+        }
+        return super.start();
     }
 
     _runNextItem() {
@@ -84,8 +101,9 @@ export class ParallelChannel extends Channel {
                 return;
             }
             this.runningTasks.push(item);
-            item.execute().then(() => {
+            item.execute(this.tasksThrow).then(() => {
                 this.runningTasks.splice(this.runningTasks.indexOf(item), 1);
+                this._recordError(item);
                 this._runNextItem();
             });
         }

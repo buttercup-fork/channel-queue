@@ -69,4 +69,51 @@ describe("Review fixes", function () {
             }
         });
     });
+
+    describe("B-586: ParallelChannel", function () {
+        it("starts a task added later in a free slot at once", async function () {
+            const channel = new ParallelChannel("late");
+            channel.parallelism = 2;
+            const started = {};
+            const t0 = Date.now();
+            const a = channel.enqueue(async () => {
+                started.a = Date.now() - t0;
+                await sleep(400);
+            });
+            await sleep(50);
+            const b = channel.enqueue(async () => {
+                started.b = Date.now() - t0;
+            });
+            await Promise.all([a, b]);
+            expect(started.b).to.be.below(300);
+        });
+
+        it("honours tasksThrow = false and reports the failure to waitForEmpty", async function () {
+            const channel = new ParallelChannel("throw");
+            channel.tasksThrow = false;
+            const result = await captureError(() =>
+                channel.enqueue(() => Promise.reject(new Error("boom")))
+            );
+            expect(result).to.equal(null);
+            const error = await captureError(() =>
+                channel.waitForEmpty({ throwForFailures: true })
+            );
+            expect(error).to.be.an("error");
+        });
+
+        it("refuses a parallelism that is not a number of at least 1", function () {
+            const channel = new ParallelChannel("bad");
+            expect(() => (channel.parallelism = NaN)).to.throw(/parallelism/i);
+            expect(() => (channel.parallelism = "3")).to.throw(/parallelism/i);
+            expect(channel.parallelism).to.equal(2);
+        });
+
+        it("refuses the same values in createParallelChannel and creates no channel", function () {
+            const queue = new ChannelQueue();
+            expect(() => queue.createParallelChannel("zero", 0)).to.throw(/parallelism/i);
+            expect(queue.channelExists("zero")).to.equal(false);
+            expect(queue.createParallelChannel("default").parallelism).to.equal(2);
+            expect(queue.createParallelChannel("five", 5).parallelism).to.equal(5);
+        });
+    });
 });

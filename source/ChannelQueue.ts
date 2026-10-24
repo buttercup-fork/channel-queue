@@ -48,10 +48,12 @@ export class ChannelQueue extends EventEmitter {
         if (this.channelExists(name)) {
             throw new Error(`Cannot create channel: channel already exists: ${name}`);
         }
-        const channel = (this.channels[name] = new ParallelChannel(name));
-        if (parallelism) {
+        const channel = new ParallelChannel(name);
+        // Checked by the setter (0 used to fall back to 2); a refused value creates no channel
+        if (parallelism !== undefined) {
             channel.parallelism = parallelism;
         }
+        this.channels[name] = channel;
         return channel;
     }
 

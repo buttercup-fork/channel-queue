@@ -49,7 +49,7 @@ export class Channel extends EventEmitter {
     private _autostart: boolean;
     private _name: string;
     private _running: boolean;
-    private _taskErrors: Error[] = [];
+    protected _taskErrors: Error[] = [];
     private _tasks: Task[];
     private _tasksThrow: boolean = true;
 
@@ -259,6 +259,17 @@ export class Channel extends EventEmitter {
         }
     }
 
+    /**
+     * Keep a finished task's error for waitForEmpty({ throwForFailures })
+     * @param item The task that finished
+     * @protected
+     */
+    _recordError(item: Task) {
+        if (item.error) {
+            this._taskErrors.push(item.error);
+        }
+    }
+
     _runNextItem() {
         const item = this.retrieveNextItem();
         if (!item) {
@@ -266,11 +277,7 @@ export class Channel extends EventEmitter {
             this.emit("stopped");
         } else {
             item.execute(this._tasksThrow)
-                .then(() => {
-                    if (item.error) {
-                        this._taskErrors.push(item.error);
-                    }
-                })
+                .then(() => this._recordError(item))
                 .then(() => this._runNextItem())
                 .catch(err => {
                     console.error(err);
