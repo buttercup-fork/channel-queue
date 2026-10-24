@@ -3,6 +3,10 @@ export interface Callable<R> {
 }
 
 export enum ErrorCode {
+    /**
+     * The task was removed from the queue by clear() before it ran
+     */
+    TaskCleared = "TASKCLEARED",
     TaskTimeout = "TASKTIMEOUT"
 }
 

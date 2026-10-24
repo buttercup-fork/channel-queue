@@ -105,6 +105,14 @@ export class Task {
     }
 
     /**
+     * Reject the task's promise without running it (it was removed from the queue)
+     * @param err The reason
+     */
+    cancel(err: Error) {
+        this._rejectFn?.(err);
+    }
+
+    /**
      * Execute the task
      * @returns {Promise}
      */

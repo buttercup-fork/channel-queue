@@ -116,4 +116,59 @@ describe("Review fixes", function () {
             expect(queue.createParallelChannel("five", 5).parallelism).to.equal(5);
         });
     });
+
+    describe("B-587: clear() and waitForEmpty", function () {
+        it("rejects the cleared tasks' promises with TaskCleared", async function () {
+            const channel = new Channel("clear");
+            channel.autostart = false;
+            const pending = channel.enqueue(() => 1);
+            channel.clear();
+            const error = await Promise.race([
+                captureError(() => pending),
+                sleep(200).then(() => "still pending")
+            ]);
+            expect(error).to.be.an("error");
+            expect(Layerr.info(error).code).to.equal(ErrorCode.TaskCleared);
+        });
+
+        it("rejects only the cleared priority", async function () {
+            const channel = new Channel("clear-type");
+            channel.autostart = false;
+            const tail = channel.enqueue(() => "tail", TaskPriority.Tail);
+            const normal = channel.enqueue(() => "normal");
+            channel.clear(TaskPriority.Tail);
+            channel.start();
+            expect(await normal).to.equal("normal");
+            expect(Layerr.info(await captureError(() => tail)).code).to.equal(
+                ErrorCode.TaskCleared
+            );
+        });
+
+        it("reports a failure once, not on every later wait", async function () {
+            const channel = new Channel("errors");
+            channel.tasksThrow = false;
+            await channel.enqueue(() => Promise.reject(new Error("old")));
+            expect(
+                await captureError(() => channel.waitForEmpty({ throwForFailures: true }))
+            ).to.be.an("error");
+            await channel.enqueue(() => "fine");
+            expect(
+                await captureError(() => channel.waitForEmpty({ throwForFailures: true }))
+            ).to.equal(null);
+        });
+
+        it("keeps a bounded number of unreported failures", async function () {
+            const channel = new Channel("many");
+            channel.tasksThrow = false;
+            await Promise.all(
+                Array.from({ length: 300 }, () =>
+                    channel.enqueue(() => Promise.reject(new Error("x")))
+                )
+            );
+            expect(channel._taskErrors.length).to.be.at.most(100);
+            expect(
+                await captureError(() => channel.waitForEmpty({ throwForFailures: true }))
+            ).to.be.an("error");
+        });
+    });
 });
