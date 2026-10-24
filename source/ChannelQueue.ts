@@ -1,6 +1,6 @@
 import { EventEmitter } from "eventemitter3";
-import { Channel } from "./Channel";
-import { ParallelChannel } from "./ParallelChannel";
+import { Channel } from "./Channel.js";
+import { ParallelChannel } from "./ParallelChannel.js";
 
 /**
  * ChannelQueue class, for managing channels
@@ -11,7 +11,8 @@ export class ChannelQueue extends EventEmitter {
 
     constructor() {
         super();
-        this._channels = {};
+        // No prototype: a channel named "__proto__" or "hasOwnProperty" is a plain key
+        this._channels = Object.create(null);
     }
 
     /**
@@ -48,10 +49,12 @@ export class ChannelQueue extends EventEmitter {
         if (this.channelExists(name)) {
             throw new Error(`Cannot create channel: channel already exists: ${name}`);
         }
-        const channel = (this.channels[name] = new ParallelChannel(name));
-        if (parallelism) {
+        const channel = new ParallelChannel(name);
+        // Checked by the setter (0 used to fall back to 2); a refused value creates no channel
+        if (parallelism !== undefined) {
             channel.parallelism = parallelism;
         }
+        this.channels[name] = channel;
         return channel;
     }
 
@@ -74,6 +77,6 @@ export class ChannelQueue extends EventEmitter {
      * @returns {Boolean} True if it exists
      */
     channelExists(name: string): boolean {
-        return this.channels.hasOwnProperty(name);
+        return Object.prototype.hasOwnProperty.call(this.channels, name);
     }
 }

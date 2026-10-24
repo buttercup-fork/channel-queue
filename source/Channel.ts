@@ -1,7 +1,12 @@
 import { EventEmitter } from "eventemitter3";
 import { Layerr } from "layerr";
-import { Task } from "./Task";
-import { Callable, TaskPriority } from "./types";
+import { Task } from "./Task.js";
+import { Callable, ErrorCode, TaskPriority } from "./types.js";
+
+/**
+ * Failures kept for waitForEmpty({ throwForFailures }) until a wait reports them
+ */
+const MAX_KEPT_ERRORS = 100;
 
 /**
  * Compare two tasks for sorting
@@ -49,7 +54,7 @@ export class Channel extends EventEmitter {
     private _autostart: boolean;
     private _name: string;
     private _running: boolean;
-    private _taskErrors: Error[] = [];
+    protected _taskErrors: Error[] = [];
     private _tasks: Task[];
     private _tasksThrow: boolean = true;
 
@@ -146,15 +151,25 @@ export class Channel extends EventEmitter {
      *  only tasks with a certain priority value
      * @memberof Channel
      */
-    clear(priorityType: TaskPriority) {
-        if (!priorityType) {
-            this.tasks.splice(0, Infinity);
-            return;
-        }
+    clear(priorityType?: TaskPriority) {
+        const removed: Task[] = [];
         for (let i = this.tasks.length - 1; i >= 0; i -= 1) {
-            if (this.tasks[i].type === priorityType) {
-                this.tasks.splice(i, 1);
+            if (!priorityType || this.tasks[i].type === priorityType) {
+                removed.push(...this.tasks.splice(i, 1));
             }
+        }
+        // Settle the callers' promises: a removed task never runs, so its promise
+        // would otherwise stay pending for good. A caller that awaits it gets the
+        // rejection; the no-op handler stops a caller that didn't keep the promise
+        // from getting an unhandled rejection, which ends a NodeJS process.
+        for (const task of removed.reverse()) {
+            task.queuedPromise.catch(() => {});
+            task.cancel(
+                new Layerr(
+                    { info: { code: ErrorCode.TaskCleared } },
+                    "Task was cleared from the queue before it ran"
+                )
+            );
         }
     }
 
@@ -184,8 +199,7 @@ export class Channel extends EventEmitter {
         if (typeof timeout === "number" && timeout >= 0) {
             task.timeLimit = timeout;
         }
-        this.tasks.push(task);
-        this.sort();
+        this._insertTask(task);
         if (this.autostart) {
             this.start();
         }
@@ -254,8 +268,45 @@ export class Channel extends EventEmitter {
                 resolve();
             });
         });
-        if (throwForFailures && this._taskErrors.length > 0) {
-            throw new Layerr(this._taskErrors[0], "Enqueued task failed");
+        // Each failure is reported once: the next wait starts with a clean list
+        const errors = this._taskErrors.splice(0, Infinity);
+        if (throwForFailures && errors.length > 0) {
+            throw new Layerr(errors[0], "Enqueued task failed");
+        }
+    }
+
+    /**
+     * Put a task into its sorted place in the queue
+     * The queue is always sorted, so a binary search finds the place without
+     * sorting the whole queue on every enqueue. The task goes after every task
+     * it compares equal to: the same order a stable sort after a push gives.
+     * @param task The task to insert
+     * @private
+     */
+    _insertTask(task: Task) {
+        const tasks = this.tasks;
+        let low = 0;
+        let high = tasks.length;
+        while (low < high) {
+            const middle = (low + high) >>> 1;
+            if (compareTasks(tasks[middle], task) <= 0) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        tasks.splice(low, 0, task);
+    }
+
+    /**
+     * Keep a finished task's error for waitForEmpty({ throwForFailures })
+     * @param item The task that finished
+     * @protected
+     */
+    _recordError(item: Task) {
+        // Bounded: with tasksThrow off and nobody waiting, failures would pile up
+        if (item.error && this._taskErrors.length < MAX_KEPT_ERRORS) {
+            this._taskErrors.push(item.error);
         }
     }
 
@@ -266,11 +317,7 @@ export class Channel extends EventEmitter {
             this.emit("stopped");
         } else {
             item.execute(this._tasksThrow)
-                .then(() => {
-                    if (item.error) {
-                        this._taskErrors.push(item.error);
-                    }
-                })
+                .then(() => this._recordError(item))
                 .then(() => this._runNextItem())
                 .catch(err => {
                     console.error(err);

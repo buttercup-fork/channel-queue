@@ -1,7 +1,7 @@
 # channel-queue
 A queue management library with channels.
 
-![Tests status](https://github.com/buttercup/channel-queue/actions/workflows/test.yml/badge.svg) [![npm version](https://badge.fury.io/js/%40buttercup%2Fchannel-queue.svg)](https://www.npmjs.com/package/@buttercup/channel-queue)
+![Tests status](https://github.com/buttercup-fork/channel-queue/actions/workflows/test.yml/badge.svg)
 
 ## About
 
@@ -14,8 +14,10 @@ Check out the [API documentation](API.md).
 Simply run:
 
 ```shell
-npm install @buttercup/channel-queue --save
+npm install github:buttercup-fork/channel-queue --save
 ```
+
+This fork isn't published to npm; the package builds itself on install. It is an ES module and needs NodeJS 22 or newer (or a browser or React Native).
 
 ## Usage
 The simplest usage is to just queue some tasks:
@@ -68,6 +70,15 @@ By default, if the task enqueued in `enqueue` throws an error, it will throw at 
 await channel.enqueue(() => Promise.reject(new Error("Fails!")));
 ```
 
+Always handle that promise. A failing task whose promise nobody awaits or catches is an unhandled rejection, and NodeJS ends the process on one by default:
+
+```typescript
+// Don't: if the task fails, NodeJS exits
+channel.enqueue(mightFail);
+// Do:
+channel.enqueue(mightFail).catch(handleError);
+```
+
 You can disable enqueued functions throwing errors by setting `tasksThrow` to `false`:
 
 ```typescript
@@ -87,8 +98,29 @@ channel.enqueue(() => Promise.reject(new Error("Fails!")));
 await channel.waitForEmpty({ throwForFailures: true });
 ```
 
+`waitForEmpty({ throwForFailures: true })` rejects with the first failure since the last wait. Each failure is reported once, and at most 100 unreported failures are kept. Both options work the same on a `ParallelChannel`.
+
+### Time Limits
+
+`enqueue` takes an optional time limit in milliseconds as its fourth argument:
+
+```typescript
+import { ErrorCode } from "@buttercup/channel-queue";
+import { Layerr } from "layerr";
+
+try {
+    await channel.enqueue(slowTask, undefined, undefined, 5000);
+} catch (err) {
+    if (Layerr.info(err).code === ErrorCode.TaskTimeout) {
+        // took longer than 5 s
+    }
+}
+```
+
+A time limit does **not** stop the task. When it runs out, the promise rejects and the channel starts the next task, but the timed-out function keeps running and its side effects still happen. Make the task itself stop (an `AbortSignal`, for example) if that matters.
+
 ### Stacking
-Items can be "stacked", meaning that if specified, items can be limited to only 1 pending item in queue. All items of the same stack _name_ would simply queue on the same item and not create more tasks. The stack can be specified when enqueuing:
+Items can be "stacked": a stack name allows only 1 pending task in the queue. While a task with that stack name is still waiting, a new `enqueue` call with the same name adds nothing and returns the waiting task's promise. Once that task has started, the next call queues a new one. The stack is the third argument:
 
 ```typescript
 import { ChannelQueue } from "@buttercup/channel-queue";
@@ -97,10 +129,10 @@ const queue = new ChannelQueue();
 const workChannel = queue.channel("work");
 
 const promise1 = workChannel.enqueue(saveWorkFn, undefined, /* Stack ID */ "save");
-// work start
 const promise2 = workChannel.enqueue(saveWorkFn, undefined, "save");
 const promise3 = workChannel.enqueue(saveWorkFn, undefined, "save");
-// promise2 and promise3 will be equal, as promise2 was still in the queue when promise3
+// All three are the same promise: the first task had not started yet when
+// the other two calls came, so saveWorkFn runs once
 ```
 
 ### Parallel Execution
@@ -117,7 +149,7 @@ workChannel.enqueue(someTask);
 queue.channel("work"); // The parallel channel
 ```
 
-Parallel channels, like their name implies, can run tasks in parallel. Instead of running them head-to-tail like regular channels, parallel channels can execute many tasks side-by-side. You can also limit them to a certain number of _threads_ (default is 2) by calling `queue.createParallelChannel("name", 5)` (where `5` is the maximum number of simultaneous tasks).
+Parallel channels, like their name implies, can run tasks in parallel. Instead of running them head-to-tail like regular channels, parallel channels can execute many tasks side-by-side. You can also limit them to a certain number of _threads_ (default is 2) by calling `queue.createParallelChannel("name", 5)` (where `5` is the maximum number of simultaneous tasks). A task added while the channel runs starts at once when a slot is free. `parallelism` must be a number of at least 1; anything else throws.
 
 Parallel channels by default do not run tasks of different priorities simultaneously. This means that if the current running tasks are high-priority, no normal priority tasks will be started. This feature can be disabled by running `parallelChannel.canRunAcrossTaskTypes = true`.
 
@@ -137,10 +169,14 @@ You can clear all enqueued items in a `Channel` by calling `clear()`:
 
 ```typescript
 queue.channel("myChannel").clear();
+// Or only one priority:
+queue.channel("myChannel").clear(TaskPriority.Tail);
 ```
 
+`clear()` removes tasks that have not started; running tasks finish as normal. The promise of each removed task rejects with an error whose code is `ErrorCode.TaskCleared`, so code awaiting it does not hang. A caller that kept no promise gets no unhandled rejection from this.
+
 ## Development & Supported Node Versions
-This library is intended to be used with NodeJS version **6** and later.
+This library needs NodeJS **22** or newer; CI tests NodeJS 22 and 24.
 
 To contribute, clone this project and run `npm install` before beginning development.
 

@@ -1,5 +1,5 @@
-import { timeLimit } from "./tools";
-import { Callable, TaskPriority } from "./types";
+import { timeLimit } from "./tools.js";
+import { Callable, TaskPriority } from "./types.js";
 
 /**
  * Internal Task class, for handling executions
@@ -102,6 +102,14 @@ export class Task {
 
     set timeLimit(newLimit: number) {
         this._timeLimit = newLimit;
+    }
+
+    /**
+     * Reject the task's promise without running it (it was removed from the queue)
+     * @param err The reason
+     */
+    cancel(err: Error) {
+        this._rejectFn?.(err);
     }
 
     /**

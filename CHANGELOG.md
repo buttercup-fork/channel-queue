@@ -1,5 +1,21 @@
 # Channel Queue changelog
 
+## v2.0.0 (Codekunde fork, unreleased)
+
+ * **Breaking**: an ES module now (`"type": "module"`, `exports`), built for ES2020; requires NodeJS 22+. CI runs on branch pushes only (Node 22 and 24)
+ * `prepare` script, so installing from a git URL builds `dist/` (B-585: without it, a git install had no `dist` and failed)
+ * Dependencies: `layerr` 3 and `eventemitter3` 5, the versions the apps use (B-589); dev tooling TypeScript 6, mocha 12, chai 6, `chai-as-promised` 8, sinon 22, Prettier 3 (also checking the TypeScript sources), rimraf 6; `husky` and `lint-staged` dropped; `jsdoc-to-markdown` dropped (its `handlebars` dependency had a critical advisory, B-562), `API.md` is kept by hand; `npm audit` clean
+ * A test pins what the package exports to the apps
+ * README: install from `buttercup-fork`, no npm badge
+ * **Breaking**: `clear()` rejects the promise of every task it removes with `ErrorCode.TaskCleared` (new); before, those promises never settled and an `await` on one hung for good. A caller that kept no promise gets no unhandled rejection (B-587)
+ * **Breaking**: `ParallelChannel.parallelism` throws unless set to a number of at least 1 (a fraction is rounded down); `NaN` or a string used to stop the channel for good. `createParallelChannel(name, parallelism)` applies the same check (0 used to fall back to 2) and creates no channel when it refuses (B-586)
+ * `ParallelChannel`: a task added while the channel runs starts at once in a free slot instead of waiting for a running task to end; `tasksThrow = false` and `waitForEmpty({ throwForFailures })` now work as on `Channel` (B-586)
+ * `waitForEmpty({ throwForFailures })` reports each failure once instead of on every later wait, and keeps at most 100 unreported failures (B-587)
+ * A time limit's timer is cleared when the task fails, not only when it succeeds (B-561)
+ * `enqueue` puts the task into its place with a binary search instead of sorting the whole queue each time; the order is unchanged (B-590)
+ * `ChannelQueue` accepts any channel name, `hasOwnProperty` and `__proto__` included (B-590)
+ * README: NodeJS 22, time limits (they do not stop the task), what `clear()` does, that an unhandled failing task ends a NodeJS process, stacking; API.md updated to match (B-588)
+
 ## v1.5.0
 _2024-12-11_
 
