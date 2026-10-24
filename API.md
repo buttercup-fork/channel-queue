@@ -126,7 +126,7 @@ ParallelChannel class (queue)
     * [.retrieveNextItem()](#Channel+retrieveNextItem) ⇒ [<code>Task</code>](#Task) \| <code>undefined</code>
     * [.sort()](#Channel+sort)
     * [.start()](#Channel+start) ⇒ <code>Boolean</code>
-    * [.waitForEmpty()](#Channel+waitForEmpty) ⇒ <code>Promise</code>
+    * [.waitForEmpty([opts])](#Channel+waitForEmpty) ⇒ <code>Promise</code>
 
 <a name="ParallelChannel+isEmpty"></a>
 
@@ -139,10 +139,10 @@ Whether the queue is empty or not
 <a name="ParallelChannel+parallelism"></a>
 
 ### parallelChannel.parallelism : <code>Number</code>
-The amount of allowed parallel executed tasks
+The amount of allowed parallel executed tasks (default 2). Setting it to anything but a
+number of at least 1 throws; a fraction is rounded down.
 
 **Kind**: instance property of [<code>ParallelChannel</code>](#ParallelChannel)  
-**Read only**: true  
 <a name="ParallelChannel+runningTasks"></a>
 
 ### parallelChannel.runningTasks : [<code>Array.&lt;Task&gt;</code>](#Task)
@@ -192,7 +192,9 @@ Whether or not tasks throw errors
 <a name="Channel+clear"></a>
 
 ### parallelChannel.clear([priorityType])
-Remove all pending tasks from the channel
+Remove all pending tasks from the channel. Running tasks are not touched. The promise of
+each removed task rejects with an error whose `code` (`Layerr.info(err).code`) is
+`ErrorCode.TaskCleared`.
 
 **Kind**: instance method of [<code>ParallelChannel</code>](#ParallelChannel)  
 **Overrides**: [<code>clear</code>](#Channel+clear)  
@@ -216,7 +218,7 @@ Enqueues a function
 | item | <code>function</code> \| <code>Promise</code> | The item to place into the queue |
 | [type] | [<code>TaskPriority</code>](#TaskPriority) | The task priority to use |
 | [stack] | <code>String</code> | The stack name |
-| [timeout] | <code>Number</code> | Optional millisecond time-limt |
+| [timeout] | <code>Number</code> | Optional time limit in milliseconds: the promise rejects with `ErrorCode.TaskTimeout` and the channel moves on, but the function itself is not stopped |
 
 <a name="Channel+getStackedItems"></a>
 
@@ -259,8 +261,10 @@ Will automatically return early if queue has already started
 **Emits**: <code>Channel#event:started</code>, <code>Channel#event:stopped</code>  
 <a name="Channel+waitForEmpty"></a>
 
-### parallelChannel.waitForEmpty() ⇒ <code>Promise</code>
-Wait for the queue to become empty
+### parallelChannel.waitForEmpty([opts]) ⇒ <code>Promise</code>
+Wait for the queue to become empty. With `{ throwForFailures: true }` it rejects with the
+first task failure since the last wait; each failure is reported once, and at most 100
+unreported failures are kept.
 
 **Kind**: instance method of [<code>ParallelChannel</code>](#ParallelChannel)  
 **Overrides**: [<code>waitForEmpty</code>](#Channel+waitForEmpty)  
