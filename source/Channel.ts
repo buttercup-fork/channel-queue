@@ -199,8 +199,7 @@ export class Channel extends EventEmitter {
         if (typeof timeout === "number" && timeout >= 0) {
             task.timeLimit = timeout;
         }
-        this.tasks.push(task);
-        this.sort();
+        this._insertTask(task);
         if (this.autostart) {
             this.start();
         }
@@ -274,6 +273,29 @@ export class Channel extends EventEmitter {
         if (throwForFailures && errors.length > 0) {
             throw new Layerr(errors[0], "Enqueued task failed");
         }
+    }
+
+    /**
+     * Put a task into its sorted place in the queue
+     * The queue is always sorted, so a binary search finds the place without
+     * sorting the whole queue on every enqueue. The task goes after every task
+     * it compares equal to: the same order a stable sort after a push gives.
+     * @param task The task to insert
+     * @private
+     */
+    _insertTask(task: Task) {
+        const tasks = this.tasks;
+        let low = 0;
+        let high = tasks.length;
+        while (low < high) {
+            const middle = (low + high) >>> 1;
+            if (compareTasks(tasks[middle], task) <= 0) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        tasks.splice(low, 0, task);
     }
 
     /**

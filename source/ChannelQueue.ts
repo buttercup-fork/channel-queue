@@ -11,7 +11,8 @@ export class ChannelQueue extends EventEmitter {
 
     constructor() {
         super();
-        this._channels = {};
+        // No prototype: a channel named "__proto__" or "hasOwnProperty" is a plain key
+        this._channels = Object.create(null);
     }
 
     /**
@@ -76,6 +77,6 @@ export class ChannelQueue extends EventEmitter {
      * @returns {Boolean} True if it exists
      */
     channelExists(name: string): boolean {
-        return this.channels.hasOwnProperty(name);
+        return Object.prototype.hasOwnProperty.call(this.channels, name);
     }
 }

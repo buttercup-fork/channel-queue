@@ -171,4 +171,56 @@ describe("Review fixes", function () {
             ).to.be.an("error");
         });
     });
+
+    describe("B-590: robustness", function () {
+        it("queues 20000 tasks without re-sorting the whole queue each time", function () {
+            // The time limit below decides, not mocha's: the old code took over 2 s
+            this.timeout(20000);
+            const channel = new Channel("many-tasks");
+            channel.autostart = false;
+            const started = Date.now();
+            for (let i = 0; i < 20000; i += 1) {
+                channel
+                    .enqueue(() => {}, i % 3 === 0 ? TaskPriority.High : TaskPriority.Normal)
+                    .catch(() => {});
+            }
+            const took = Date.now() - started;
+            expect(channel.tasks).to.have.lengthOf(20000);
+            expect(took, `${took} ms`).to.be.below(1000);
+        });
+
+        it("keeps the order a full sort after each push gave", function () {
+            const channel = new Channel("insert");
+            channel.autostart = false;
+            const types = [TaskPriority.High, TaskPriority.Normal, TaskPriority.Tail];
+            const pushed = [];
+            const until = Date.now() + 30;
+            let i = 0;
+            // Spans several milliseconds, so tasks differ in priority and in created time
+            while (Date.now() < until || i < 3000) {
+                const before = new Set(channel.tasks);
+                channel.enqueue(() => {}, types[(i * 7919) % 3]).catch(() => {});
+                pushed.push(channel.tasks.find(task => !before.has(task)));
+                i += 1;
+            }
+            const reference = new Channel("reference");
+            reference._tasks = pushed.slice();
+            reference.sort();
+            expect(new Set(pushed.map(task => task.created)).size).to.be.above(1);
+            expect(channel.tasks).to.have.lengthOf(pushed.length);
+            const mismatch = channel.tasks.findIndex((task, n) => task !== reference.tasks[n]);
+            expect(mismatch).to.equal(-1);
+        });
+
+        it("accepts any channel name, including hasOwnProperty and __proto__", function () {
+            const queue = new ChannelQueue();
+            expect(queue.channel("hasOwnProperty")).to.be.an.instanceOf(Channel);
+            expect(queue.channel("other")).to.be.an.instanceOf(Channel);
+            const proto = queue.channel("__proto__");
+            expect(proto).to.be.an.instanceOf(Channel);
+            expect(queue.channelExists("__proto__")).to.equal(true);
+            expect(queue.channel("__proto__")).to.equal(proto);
+            expect(queue.channelExists("toString")).to.equal(false);
+        });
+    });
 });

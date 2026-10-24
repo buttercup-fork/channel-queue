@@ -81,7 +81,8 @@ describe("Channel", function () {
             this.channel.enqueue(op1, TaskPriority.Normal);
             this.channel.enqueue(op2, TaskPriority.Tail);
             this.channel.enqueue(op3, TaskPriority.High);
-            expect(this.channel.sort.calledThrice).to.be.true;
+            // Each task is inserted in its place: no full sort per enqueue (B-590)
+            expect(this.channel.sort.called).to.be.false;
             const items = this.channel.tasks;
             expect(items[0].target).to.equal(op3); // High prio
             expect(items[1].target).to.equal(op1); // Normal
@@ -96,7 +97,8 @@ describe("Channel", function () {
             this.channel.enqueue(op2);
             this.channel.enqueue(op1);
             this.channel.enqueue(op3);
-            expect(this.channel.sort.calledThrice).to.be.true;
+            // Each task is inserted in its place: no full sort per enqueue (B-590)
+            expect(this.channel.sort.called).to.be.false;
             const items = this.channel.tasks;
             expect(items[0].target).to.equal(op2);
             expect(items[1].target).to.equal(op1);
