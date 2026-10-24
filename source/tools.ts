@@ -19,8 +19,8 @@ export function timeLimit<T>(promise: Promise<T>, time: number): Promise<T | voi
                 );
             }, time);
         })
-    ]).then(result => {
+    ]).finally(() => {
+        // Whether the task finished, failed or timed out, the timer must not stay behind
         clearTimeout(timeout);
-        return result;
     });
 }
