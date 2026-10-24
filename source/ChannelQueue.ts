@@ -1,6 +1,6 @@
 import { EventEmitter } from "eventemitter3";
-import { Channel } from "./Channel";
-import { ParallelChannel } from "./ParallelChannel";
+import { Channel } from "./Channel.js";
+import { ParallelChannel } from "./ParallelChannel.js";
 
 /**
  * ChannelQueue class, for managing channels

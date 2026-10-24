@@ -1,5 +1,5 @@
-import { Channel } from "./Channel";
-import { Task } from "./Task";
+import { Channel } from "./Channel.js";
+import { Task } from "./Task.js";
 
 /**
  * ParallelChannel class (queue)

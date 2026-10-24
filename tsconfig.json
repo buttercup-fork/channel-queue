@@ -1,10 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2015",
-    "module": "commonjs",
+    "target": "es2020",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "outDir": "./dist",
+    "rootDir": "./source",
+    // TypeScript 6 defaults: strict on, no automatic @types. Keep the previous behaviour.
     "strict": false,
+    "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

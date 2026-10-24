@@ -1,5 +1,5 @@
-import { timeLimit } from "./tools";
-import { Callable, TaskPriority } from "./types";
+import { timeLimit } from "./tools.js";
+import { Callable, TaskPriority } from "./types.js";
 
 /**
  * Internal Task class, for handling executions

@@ -1,12 +1,10 @@
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const sinon = require("sinon");
+import * as chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import sinon from "sinon";
 
-const { expect } = chai;
+const { expect } = chai.use(chaiAsPromised);
 
-chai.use(chaiAsPromised);
-
-Object.assign(global, {
+Object.assign(globalThis, {
     expect,
     sinon
 });

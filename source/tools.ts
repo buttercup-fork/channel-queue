@@ -1,5 +1,5 @@
 import { Layerr } from "layerr";
-import { ErrorCode } from "./types";
+import { ErrorCode } from "./types.js";
 
 export function timeLimit<T>(promise: Promise<T>, time: number): Promise<T | void> {
     let timeout: ReturnType<typeof setTimeout>;

@@ -1,7 +1,7 @@
 # channel-queue
 A queue management library with channels.
 
-![Tests status](https://github.com/buttercup/channel-queue/actions/workflows/test.yml/badge.svg) [![npm version](https://badge.fury.io/js/%40buttercup%2Fchannel-queue.svg)](https://www.npmjs.com/package/@buttercup/channel-queue)
+![Tests status](https://github.com/buttercup-fork/channel-queue/actions/workflows/test.yml/badge.svg)
 
 ## About
 
@@ -14,8 +14,10 @@ Check out the [API documentation](API.md).
 Simply run:
 
 ```shell
-npm install @buttercup/channel-queue --save
+npm install github:buttercup-fork/channel-queue --save
 ```
+
+This fork isn't published to npm; the package builds itself on install. It is an ES module and needs NodeJS 22 or newer (or a browser or React Native).
 
 ## Usage
 The simplest usage is to just queue some tasks:
