@@ -14,16 +14,16 @@ Check out the [API documentation](API.md).
 Simply run:
 
 ```shell
-npm install github:buttercup-fork/channel-queue --save
+npm install @buttercup-fork/channel-queue --save
 ```
 
-This fork isn't published to npm; the package builds itself on install. It is an ES module and needs NodeJS 22 or newer (or a browser or React Native).
+The fork is published on npm as `@buttercup-fork/channel-queue` (`@buttercup/channel-queue` on npm is upstream's 1.5.0). It is an ES module and needs NodeJS 22 or newer (or a browser or React Native).
 
 ## Usage
 The simplest usage is to just queue some tasks:
 
 ```typescript
-import { ChannelQueue } from "@buttercup/channel-queue";
+import { ChannelQueue } from "@buttercup-fork/channel-queue";
 
 const queue = new ChannelQueue();
 const work = queue.channel("myChannel").enqueue(() => 123);
@@ -38,7 +38,7 @@ someChannel.enqueue(job3);
 You can push tasks above others by setting them as high-priority:
 
 ```typescript
-import { ChannelQueue, TaskPriority } from "@buttercup/channel-queue";
+import { ChannelQueue, TaskPriority } from "@buttercup-fork/channel-queue";
 
 const queue = new ChannelQueue();
 const workChannel = queue.channel("work");
@@ -51,7 +51,7 @@ workChannel.enqueue(importantJobMethod, TaskPriority.High).then(result => {
 Tasks can also be run as "low" priority or at the **tail** end of the queue:
 
 ```typescript
-import { ChannelQueue, TaskPriority } from "@buttercup/channel-queue";
+import { ChannelQueue, TaskPriority } from "@buttercup-fork/channel-queue";
 
 const queue = new ChannelQueue();
 const workChannel = queue.channel("work");
@@ -105,7 +105,7 @@ await channel.waitForEmpty({ throwForFailures: true });
 `enqueue` takes an optional time limit in milliseconds as its fourth argument:
 
 ```typescript
-import { ErrorCode } from "@buttercup/channel-queue";
+import { ErrorCode } from "@buttercup-fork/channel-queue";
 import { Layerr } from "layerr";
 
 try {
@@ -123,7 +123,7 @@ A time limit does **not** stop the task. When it runs out, the promise rejects a
 Items can be "stacked": a stack name allows only 1 pending task in the queue. While a task with that stack name is still waiting, a new `enqueue` call with the same name adds nothing and returns the waiting task's promise. Once that task has started, the next call queues a new one. The stack is the third argument:
 
 ```typescript
-import { ChannelQueue } from "@buttercup/channel-queue";
+import { ChannelQueue } from "@buttercup-fork/channel-queue";
 
 const queue = new ChannelQueue();
 const workChannel = queue.channel("work");
@@ -139,7 +139,7 @@ const promise3 = workChannel.enqueue(saveWorkFn, undefined, "save");
 Tasks can be run in parallel using the `ParallelChannel` class. You can create a parallel channel, in place of a regular channel, by calling `ChannelQueue#createParallelChannel`:
 
 ```typescript
-import { ChannelQueue } from "@buttercup/channel-queue";
+import { ChannelQueue } from "@buttercup-fork/channel-queue";
 
 const queue = new ChannelQueue();
 const workChannel = queue.createParallelChannel("work");
