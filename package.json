@@ -33,7 +33,7 @@
     "event",
     "emitter"
   ],
-  "author": "Buttercup <info@buttercup.pw>",
+  "author": "Buttercup <buttercup@codekunde.net>",
   "license": "MIT",
   "engines": {
     "node": ">=22"
