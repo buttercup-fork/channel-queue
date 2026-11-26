@@ -7,6 +7,7 @@
  * Dependencies: `layerr` 3 and `eventemitter3` 5, the versions the apps use (B-589); dev tooling TypeScript 6, mocha 12, chai 6, `chai-as-promised` 8, sinon 22, Prettier 3 (also checking the TypeScript sources), rimraf 6; `husky` and `lint-staged` dropped; `jsdoc-to-markdown` dropped (its `handlebars` dependency had a critical advisory, B-562), `API.md` is kept by hand; `npm audit` clean
  * A test pins what the package exports to the apps
  * README: install from `buttercup-fork`, no npm badge
+ * `author` email is `buttercup@codekunde.net` (was upstream's `info@buttercup.pw`, B-509)
  * **Breaking**: `clear()` rejects the promise of every task it removes with `ErrorCode.TaskCleared` (new); before, those promises never settled and an `await` on one hung for good. A caller that kept no promise gets no unhandled rejection (B-587)
  * **Breaking**: `ParallelChannel.parallelism` throws unless set to a number of at least 1 (a fraction is rounded down); `NaN` or a string used to stop the channel for good. `createParallelChannel(name, parallelism)` applies the same check (0 used to fall back to 2) and creates no channel when it refuses (B-586)
  * `ParallelChannel`: a task added while the channel runs starts at once in a free slot instead of waiting for a running task to end; `tasksThrow = false` and `waitForEmpty({ throwForFailures })` now work as on `Channel` (B-586)
