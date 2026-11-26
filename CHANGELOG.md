@@ -1,7 +1,9 @@
 # Channel Queue changelog
 
-## v2.0.0 (Codekunde fork, unreleased)
+## v2.0.0
+_2026-11-26_ (CodeKunde fork)
 
+ * **New package name:** `@buttercup-fork/channel-queue` on npm (import from it instead of `@buttercup/channel-queue`), staged from GitHub Actions through trusted publishing with provenance (`publish.yml`, started by hand); the package name `@buttercup/channel-queue` stays upstream's
  * **Breaking**: an ES module now (`"type": "module"`, `exports`), built for ES2020; requires NodeJS 22+. CI runs on branch pushes only (Node 22 and 24)
  * `prepare` script, so installing from a git URL builds `dist/` (B-585: without it, a git install had no `dist` and failed)
  * Dependencies: `layerr` 3 and `eventemitter3` 5, the versions the apps use (B-589); dev tooling TypeScript 6, mocha 12, chai 6, `chai-as-promised` 8, sinon 22, Prettier 3 (also checking the TypeScript sources), rimraf 6; `husky` and `lint-staged` dropped; `jsdoc-to-markdown` dropped (its `handlebars` dependency had a critical advisory, B-562), `API.md` is kept by hand; `npm audit` clean

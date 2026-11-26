@@ -1,5 +1,5 @@
 {
-  "name": "@buttercup/channel-queue",
+  "name": "@buttercup-fork/channel-queue",
   "version": "2.0.0",
   "description": "A queue management library with channels",
   "main": "./dist/index.js",
@@ -56,5 +56,8 @@
     "sinon": "^22.1.0",
     "sleep-promise": "^9.1.0",
     "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
